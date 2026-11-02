@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">深空拍攝規劃與動態月光/曙暮光計算器 v0.5.19</title>
+    <title id="pageTitle">深空拍攝規劃與動態月光/曙暮光計算器 v0.5.21</title>
     <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.js"></script>
     <style>
         :root {
@@ -383,12 +383,18 @@
         .timeline-main-title { font-size: 1rem; font-weight: bold; color: #38bdf8; margin: 16px 0 2px 2px; }
         .timeline-sub { font-size: 0.8rem; color: var(--text-muted); margin: 0 0 6px 2px; }
         .legend-row { flex-wrap: wrap; gap: 6px 12px; margin: 0 0 6px 2px; }
+
+        /* 自動計算狀態列 / 重新計算 */
+        .calc-status { margin: 12px 0; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+        .calc-status.error { border-color: #f43f5e; background: rgba(244,63,94,0.12); color: var(--text-main); }
+        .calc-retry { width: auto; margin: 6px 0 0 0; padding: 5px 12px; font-size: 0.85rem; background: #0284c7; color: #fff; display: inline-block; }
+        .btn-refresh { width: auto; margin: 0 0 0 6px; padding: 3px 10px; font-size: 0.78rem; font-weight: normal; background: #0f766e; color: #fff; border-radius: 14px; vertical-align: middle; }
 </style>
 </head>
 <body>
 <div class="container">
     <div style="margin-bottom: 15px;">
-        <h2 data-i18n="app_title" style="font-size: 1.25rem; line-height: 1.4; margin-bottom: 10px; color: #38bdf8; text-align: center; width: 100%; display: block;">🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.5.19</h2>
+        <h2 data-i18n="app_title" style="font-size: 1.25rem; line-height: 1.4; margin-bottom: 10px; color: #38bdf8; text-align: center; width: 100%; display: block;">🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.5.21</h2>
         <div style="display: flex; align-items: center; justify-content: flex-end; width: 100%;">
             <div style="display: flex; align-items: center; gap: 6px;">
                 <span style="font-size: 0.9rem;">🌐</span>
@@ -429,28 +435,23 @@
     </div>
 
         <div class="form-group">
-        <label data-i18n="lbl_threshold">滿月下方高度角 (°)</label>
-        <select id="altThreshold" onchange="onMoonThresholdChange();">
-            <option value="6">-6°</option>
-            <option value="8">-8°</option>
-            <option value="10">-10°</option>
-            <option value="12" selected>-12°</option>
-            <option value="14">-14°</option>
-            <option value="16">-16°</option>
-            <option value="18">-18°</option>
-        </select>
+        <label data-i18n="lbl_threshold">滿月干擾於地平線下的高度角 (°)</label>
+        <div class="slider-container">
+            <input type="range" id="altThreshold" min="-18" max="-6" step="1" value="-12" oninput="onMoonThresholdInput()" onchange="onMoonThresholdChange()">
+            <span class="slider-value" id="altThresholdVal" style="min-width: 56px; text-align: right;">-12°</span>
+        </div>
     </div>
-    <button onclick="calculateMoonTwilight()" data-i18n="btn_calculate">計算評估時段</button>
+    <div id="calcStatus" class="calc-status" role="status" aria-live="polite" style="display:none;"></div>
 
     <div class="result-card" id="resultCard" style="display:none;">
-        <h3><span data-i18n="res_report_title">📊 評估結果報告</span> <span id="resTimezoneBadge" style="font-size: 0.8rem; font-weight: normal; color: #38bdf8;"></span></h3>
+        <h3><span data-i18n="res_report_title">📊 評估結果報告</span> <span id="resTimezoneBadge" style="font-size: 0.8rem; font-weight: normal; color: #38bdf8;"></span> <button type="button" class="btn-refresh" onclick="requestRecalc('refresh')" data-i18n="btn_refresh">🔄 重新計算</button></h3>
         
         <div class="result-item">
             <span class="result-label" data-i18n="res_loc_label">當前使用地點：</span>
             <span class="result-value" id="resLocationName">-</span>
         </div>
 
-        <div class="timeline-main-title" data-i18n="timeline_title">🌌 觀測夜時間軸</div>
+        <div class="timeline-main-title"><span data-i18n="timeline_title">🌌 觀測夜時間軸</span> <span id="timelineMoonThr"></span></div>
         <div class="timeline-sub" data-i18n="timeline_sub">日落 → 次日日出</div>
         <div class="timeline-legend legend-row">
             <div class="legend-item"><div class="legend-dot bg-gray-twilight"></div><span data-i18n="legend_twilight">曙暮光（曙）</span></div>
@@ -768,8 +769,8 @@
         <span data-i18n="footer_created">由香港 mbike-cat 製作，2026年11月。</span><br>
         <a href="https://github.com/mbike-cat/astro-twilight-planner" target="_blank" style="color: #38bdf8; text-decoration: none; margin: 0 8px;">📂 <span data-i18n="footer_repo">GitHub 專案首頁</span></a> |
         <a href="https://github.com/mbike-cat/astro-twilight-planner/blob/main/README.md" target="_blank" style="color: #38bdf8; text-decoration: none; margin: 0 8px;">📖 <span data-i18n="footer_readme">說明文件</span></a> |
-        <a href="https://github.com/mbike-cat/astro-twilight-planner/blob/main/USER-MANUAL.md" target="_blank" style="color: #38bdf8; text-decoration: none; margin: 0 8px;">📘 <span data-i18n="footer_manual">使用手冊</span></a> |
-        <a href="https://github.com/mbike-cat/astro-twilight-planner/issues" target="_blank" style="color: #38bdf8; text-decoration: none; margin: 0 8px;">🐛 <span data-i18n="footer_issues">問題回報 (Issues)</span></a><br>
+        <a href="https://github.com/mbike-cat/astro-twilight-planner/blob/main/USER-MANUAL.md" target="_blank" style="color: #38bdf8; text-decoration: none; margin: 0 8px;">📘 <span data-i18n="footer_manual">使用手冊</span></a><br>
+        <span>🐛 <span data-i18n="footer_issues_pre">有任何意見或建議？歡迎前往</span> <a href="https://github.com/mbike-cat/astro-twilight-planner/issues" target="_blank" style="color: #38bdf8; text-decoration: none;">GitHub Issues</a> <span data-i18n="footer_issues_post">留下訊息</span></span><br>
         <span data-i18n="footer_disclaimer" style="font-size: 0.75rem; opacity: 0.8;">免責聲明：本內容僅供教育與資訊參考。</span>
     </div>
 </div>
@@ -780,7 +781,15 @@
     // ---------------------------------------------------------
     const i18n = {
         'zh-TW': {
-            app_title: "🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.5.19",
+            app_title: "🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.5.21",
+            calc_status_loading: "⏳ 正在計算評估結果…",
+            calc_err_lib: "⚠️ 天文計算函式庫尚未載入（可能是網路問題），已嘗試備用來源。請確認網路後按「🔄 重新計算」。",
+            calc_err_input: "⚠️ 參數有誤：",
+            calc_err_polar: "⚠️ 此日期/地點沒有明確的日落或日出（極晝/極夜），無法繪製時間軸。",
+            calc_err_generic: "❌ 計算錯誤：",
+            btn_refresh: "🔄 重新計算",
+            footer_issues_pre: "有任何意見或建議？歡迎前往",
+            footer_issues_post: "留下訊息",
             btn_toggle_moonsun: "📂 展開/收合 月光與太陽曙暮光評估",
             twilight_short: "曙",
             legend_twilight: "曙暮光（曙）",
@@ -822,7 +831,6 @@
             footer_repo: "GitHub 專案首頁",
             footer_readme: "說明文件",
             footer_manual: "使用手冊",
-            footer_issues: "問題回報 (Issues)",
             footer_disclaimer: "免責聲明：本內容僅供教育與資訊參考。",
             seq_title: "🌟 智慧拍攝排程與建議序列",
                         lbl_exposure: "⏱️ 目標區塊拍攝時長 (1小時倍數)：",
@@ -842,7 +850,7 @@
             lbl_lat: "緯度 (Lat, -90° ~ +90°)",
             lbl_lon: "經度 (Lon, -180° ~ +180°)",
             lbl_alt: "海拔 (-500 ~ 9000公尺)",
-            lbl_threshold: "滿月下方高度角 (°)",
+            lbl_threshold: "滿月干擾於地平線下的高度角 (°)",
             btn_save_loc: "💾 儲存當前地點",
                         btn_reset: "🔄 重設（恢復預設值)",
             msg_import_json_confirm: "⚠️ 警告：匯入 JSON 檔案將會完全覆蓋現有的自訂目標與地點設定！確定要繼續嗎？",
@@ -863,7 +871,6 @@
             btn_export_csv: "📊 匯出目標清單 (CSV)",
             btn_import_csv: "📂 匯入目標清單 (CSV)",
             lbl_obs_time: "查詢當晚日期與時間 (當地時間)",
-            btn_calculate: "計算評估時段",
             res_report_title: "📊 評估結果報告",
             res_loc_label: "當前使用地點：",
             res_half1_title: "🌅 上半場：日落 ~ 午夜 12 點 (00:00)",
@@ -904,9 +911,6 @@
             opt_sort_2: "1. 目標-月亮 夾角 (由大到小)",
             opt_sort_3: "3. 目標升出地平線時間 (由早到晚)",
             msg_no_calc: "請先點擊計算以檢視目標夾角與可見時段",
-            footer_issues: "有任何意見或建議？歡迎前往",
-            footer_leave_msg: "留下訊息。",
-            footer_disclaimer: "免責聲明：本內容僅供教育與資訊參考。",
             twilight_text: "曙暮光",
             moon_disturb_text: "月光干擾",
             no_event: "當天無此事件",
@@ -924,7 +928,15 @@
             new_moon: "新月", crescent: "娥眉月", first_quarter: "上弦月", waxing_gibbous: "盈凸月", full_moon: "滿月", waning_gibbous: "虧凸月", third_quarter: "下弦月", waning_crescent: "殘月"
         },
         'zh-CN': {
-            app_title: "🌙 深空拍摄规划与动态月光/曙暮光计算器 v0.5.19",
+            app_title: "🌙 深空拍摄规划与动态月光/曙暮光计算器 v0.5.21",
+            calc_status_loading: "⏳ 正在计算评估结果…",
+            calc_err_lib: "⚠️ 天文计算函数库尚未载入（可能是网络问题），已尝试备用来源。请确认网络后按“🔄 重新计算”。",
+            calc_err_input: "⚠️ 参数有误：",
+            calc_err_polar: "⚠️ 此日期/地点没有明确的日落或日出（极昼/极夜），无法绘制时间轴。",
+            calc_err_generic: "❌ 计算错误：",
+            btn_refresh: "🔄 重新计算",
+            footer_issues_pre: "有任何意见或建议？欢迎前往",
+            footer_issues_post: "留下信息",
             btn_toggle_moonsun: "📂 展开/收合 月光与太阳曙暮光评估",
             twilight_short: "曙",
             legend_twilight: "曙暮光（曙）",
@@ -965,7 +977,6 @@
             footer_repo: "GitHub 项目首页",
             footer_readme: "说明文件",
             footer_manual: "使用手册",
-            footer_issues: "问题回报 (Issues)",
             footer_disclaimer: "免责声明：本内容仅供教育与资讯参考。",
             seq_title: "🌟 智慧拍摄排程与建议序列",
                         lbl_exposure: "⏱️ 目标区块拍摄时长 (1小时倍数)：",
@@ -984,7 +995,7 @@
             lbl_lat: "纬度 (Lat, -90° ~ +90°)",
             lbl_lon: "经度 (Lon, -180° ~ +180°)",
             lbl_alt: "海拔 (-500 ~ 9000米)",
-            lbl_threshold: "满月下方高度角 (°)",
+            lbl_threshold: "满月干扰于地平线下的高度角 (°)",
             btn_save_loc: "💾 保存当前地点",
                         btn_reset: "🔄 重设（恢复默认值)",
             msg_import_json_confirm: "⚠️ 警告：导入 JSON 文件将会完全覆盖现有的自定义目标与地点设置！确定要继续吗？",
@@ -1005,7 +1016,6 @@
             btn_export_csv: "📊 导出目标清单 (CSV)",
             btn_import_csv: "📂 导入目标清单 (CSV)",
             lbl_obs_time: "查询当晚日期与时间 (当地时间)",
-            btn_calculate: "计算评估时段",
             res_report_title: "📊 评估结果报告",
             res_loc_label: "当前使用地点：",
             res_half1_title: "🌅 上半场：日落 ~ 午夜 12 点 (00:00)",
@@ -1048,9 +1058,6 @@
             opt_sort_fit: "4. 器材适配程度（最佳优先）",
             seq_header_info: "目标高度 / 月角距 / 器材适配",
             msg_no_calc: "请先点击计算以检视目标夹角与可见时段",
-            footer_issues: "有任何意见或建议？欢迎前往",
-            footer_leave_msg: "留下讯息。",
-            footer_disclaimer: "免责声明：本内容仅供教育与资讯参考。",
             twilight_text: "曙暮光",
             moon_disturb_text: "月光干扰",
             no_event: "当天无此事件",
@@ -1068,7 +1075,15 @@
             new_moon: "新月", crescent: "蛾眉月", first_quarter: "上弦月", waxing_gibbous: "盈凸月", full_moon: "满月", waning_gibbous: "亏凸月", third_quarter: "下弦月", waning_crescent: "残月"
         },
         'en': {
-            app_title: "🌙 Deep-Sky Schedule & Dynamic Moon/Twilight Calculator v0.5.19",
+            app_title: "🌙 Deep-Sky Schedule & Dynamic Moon/Twilight Calculator v0.5.21",
+            calc_status_loading: "⏳ Calculating…",
+            calc_err_lib: "⚠️ The astronomy library could not be loaded (possibly a network problem); a backup source was tried. Check your connection and press “🔄 Recalculate”.",
+            calc_err_input: "⚠️ Invalid input:",
+            calc_err_polar: "⚠️ No clear sunset or sunrise for this date/location (polar day/night); the timeline cannot be drawn.",
+            calc_err_generic: "❌ Calculation error:",
+            btn_refresh: "🔄 Recalculate",
+            footer_issues_pre: "Feedback or suggestions? Please visit",
+            footer_issues_post: "to leave a message",
             btn_toggle_moonsun: "📂 Toggle Moon & Sun Twilight Evaluation",
             twilight_short: "Twi",
             legend_twilight: "Twilight (Twi)",
@@ -1109,7 +1124,6 @@
             footer_repo: "GitHub Repository",
             footer_readme: "README",
             footer_manual: "User Manual",
-            footer_issues: "Issues & Feedback",
             footer_disclaimer: "Disclaimer: Content provided for educational and informational purposes only.",
             seq_title: "🌟 Imaging Sequence Planner & Priority Schedule",
                         lbl_exposure: "⏱️ Target Slot Duration (Step: 1.0 hr):",
@@ -1128,7 +1142,7 @@
             lbl_lat: "Latitude (-90° ~ +90°)",
             lbl_lon: "Longitude (-180° ~ +180°)",
             lbl_alt: "Elevation (-500 ~ 9000m)",
-            lbl_threshold: "Full Moon Altitude Threshold (°)",
+            lbl_threshold: "Full-Moon Interference Altitude Below Horizon (°)",
             btn_save_loc: "💾 Save Observatory",
                         btn_reset: "🔄 Reset (Restore Defaults)",
             msg_import_json_confirm: "⚠️ Warning: Importing a JSON file will overwrite your existing custom targets and locations! Do you want to proceed?",
@@ -1149,7 +1163,6 @@
             btn_export_csv: "📊 Export CSV Targets",
             btn_import_csv: "📂 Import CSV Targets",
             lbl_obs_time: "Observation Date & Time (Local Time zone)",
-            btn_calculate: "Calculate Imaging Window",
             res_report_title: "📊 Assessment Report",
             res_loc_label: "Observatory:",
             res_half1_title: "🌅 First Half: Sunset ~ Midnight (00:00)",
@@ -1192,9 +1205,6 @@
             opt_sort_fit: "4. Telescope fit (best first)",
             seq_header_info: "Target Alt / Moon Sep / Fit",
             msg_no_calc: "Click calculate to view target angles and visibility windows",
-            footer_issues: "Have feedback or suggestions? Visit",
-            footer_leave_msg: "on GitHub.",
-            footer_disclaimer: "Disclaimer: For educational and informational purposes only.",
             twilight_text: "Twilight",
             moon_disturb_text: "Moon Interference",
             no_event: "No such event today",
@@ -1430,6 +1440,7 @@
         if (typeof updateTelescopeFov === 'function') updateTelescopeFov();
         renderTargetList();
         renderLocationList();
+        updateMoonEvalTitle();
         requestRecalc('language');
     }
 
@@ -1438,8 +1449,30 @@
     }
 
     
+    // 滑桿的值是負數（-18 ~ -6）；其餘程式與儲存資料一律使用正的度數（6 ~ 18），維持舊備份與地點資料相容
+    function getMoonThresholdDeg() {
+        const el = document.getElementById('altThreshold');
+        const v = el ? parseFloat(el.value) : NaN;
+        return Number.isFinite(v) ? Math.abs(v) : 12;
+    }
+    function setMoonThresholdDeg(posDeg) {
+        const el = document.getElementById('altThreshold');
+        if (!el) return;
+        let d = Math.round(Math.abs(Number(posDeg)));
+        if (!Number.isFinite(d)) d = 12;
+        d = Math.min(18, Math.max(6, d));
+        el.value = String(-d);
+        syncMoonThresholdUI();
+    }
+    function syncMoonThresholdUI() {
+        const valEl = document.getElementById('altThresholdVal');
+        if (valEl) valEl.innerText = `-${getMoonThresholdDeg()}°`;
+        updateMoonEvalTitle();
+    }
+    function onMoonThresholdInput() { syncMoonThresholdUI(); }
+
     function updateMoonEvalTitle() {
-        const thresholdVal = document.getElementById('altThreshold').value;
+        const thresholdVal = getMoonThresholdDeg();
         const moonEvalTitleEl = document.getElementById('divMoonEvalTitle');
         if (moonEvalTitleEl) {
             if (currentLang === 'en') {
@@ -1450,6 +1483,11 @@
                 moonEvalTitleEl.innerText = `🌕 月光干擾（-${thresholdVal}°）評估`;
             }
         }
+        const tlEl = document.getElementById('timelineMoonThr');
+        if (tlEl) {
+            tlEl.innerText = currentLang === 'en' ? `(🌕 Full-moon interference -${thresholdVal}°)`
+                : (currentLang === 'zh-CN' ? `（🌕 满月干扰 -${thresholdVal}°）` : `（🌕 滿月干擾 -${thresholdVal}°）`);
+        }
     }
 
     function t(key) {
@@ -1457,7 +1495,7 @@
     }
     // ---------------------------------------------------------
 
-    const APP_VERSION = "0.5.19";
+    const APP_VERSION = "0.5.21";
 
     const DEFAULT_LOCATIONS = [
         { name: "香港大帽山 Tai Mo Shan, Hong Kong", utcOffsetMinutes: 480, lat: 22.4037, lon: 114.1287, alt: 900, altThreshold: 12.0, hN: 15, hNE: 15, hE: 15, hSE: 15, hS: 15, hSW: 15, hW: 15, hNW: 15 },
@@ -1926,7 +1964,7 @@
 
     // ===================== 固定 UTC offset 時間支援 =====================
     // 絕對時刻以 UTC Date 儲存；顯示和輸入依觀測地固定 offset 轉換，不讀取裝置時區。
-    // v0.5.19：固定 UTC offset。內部 Date 一律代表 UTC 絕對時刻；顯示/輸入再套用觀測地 offset。
+    // v0.5.21：固定 UTC offset。內部 Date 一律代表 UTC 絕對時刻；顯示/輸入再套用觀測地 offset。
     let SITE_OFFSET_MINUTES = 480;
     let TZ_STATUS = 'manual';
     const pad2 = (n) => String(n).padStart(2, '0');
@@ -2011,7 +2049,7 @@
         requestRecalc('utc-offset');
     }
     function onMoonThresholdChange() {
-        updateMoonEvalTitle();
+        syncMoonThresholdUI();
         dbg('ui.moon-threshold', { value: document.getElementById('altThreshold').value });
         requestRecalc('moon-threshold');
     }
@@ -2076,7 +2114,7 @@
             document.getElementById('lat').value = loc.lat;
             document.getElementById('lon').value = loc.lon;
             document.getElementById('alt').value = loc.alt;
-            document.getElementById('altThreshold').value = String(loc.altThreshold);
+            setMoonThresholdDeg(loc.altThreshold);
             const setSlider = (id, val) => {
                 const el = document.getElementById(id);
                 const valEl = document.getElementById(id + 'Val');
@@ -2111,7 +2149,7 @@
         const lat = parseFloat(document.getElementById('lat').value);
         const lon = parseFloat(document.getElementById('lon').value);
         const alt = parseFloat(document.getElementById('alt').value);
-        const altThreshold = parseFloat(document.getElementById('altThreshold').value);
+        const altThreshold = getMoonThresholdDeg();
 
         let errors = [];
         if (isNaN(lat) || lat < -90 || lat > 90) errors.push("• 緯度範圍錯誤 (-90° ~ +90°)");
@@ -2563,6 +2601,41 @@
         if (typeof window.__redrawTimelines === 'function') window.__redrawTimelines();
     });
 
+    // =====================  載入即自動計算（已移除「計算評估時段」按鈕）  =====================
+    // 錯誤不再用警告視窗打斷：改顯示在報告上方的狀態列，並附「重新計算」。
+    function showCalcStatus(kind, msg) {
+        const el = document.getElementById('calcStatus');
+        if (!el) return;
+        el.className = 'calc-status' + (kind === 'error' ? ' error' : '');
+        el.innerHTML = escapeHtml(msg) + (kind === 'error' ? `<br><button type="button" class="calc-retry" onclick="requestRecalc('retry')">${t('btn_refresh')}</button>` : '');
+        el.style.display = 'block';
+    }
+    function hideCalcStatus() {
+        const el = document.getElementById('calcStatus');
+        if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+    }
+    // 主要 CDN 載入失敗時，自動嘗試備用來源一次
+    let ASTRO_FALLBACK_TRIED = false;
+    function loadAstronomyFallback() {
+        if (ASTRO_FALLBACK_TRIED || typeof Astronomy !== 'undefined') return;
+        ASTRO_FALLBACK_TRIED = true;
+        try {
+            dbg('astronomy.fallback.load', { src: 'unpkg' }, 'warn');
+            const sc = document.createElement('script');
+            sc.src = 'https://unpkg.com/astronomy-engine@2.1.19/astronomy.browser.js';
+            sc.onload = () => { dbg('astronomy.fallback.ok'); requestRecalc('astronomy-loaded'); };
+            sc.onerror = () => dbg('astronomy.fallback.fail', {}, 'error');
+            document.head.appendChild(sc);
+        } catch (e) { dbg('astronomy.fallback.fail', { error: String(e) }, 'error'); }
+    }
+    // 頁面先顯示，下一個畫面才開始計算，避免載入時畫面卡住
+    function startAutoCalc() {
+        USER_REQUESTED_CALC = true;
+        showCalcStatus('loading', t('calc_status_loading'));
+        dbg('autocalc.schedule');
+        requestAnimationFrame(() => setTimeout(() => calculateMoonTwilight('auto-load'), 30));
+    }
+
     window.onload = function() {
         dbg('app.load', dbgEnvironment());
         loadUserLocations();
@@ -2587,8 +2660,7 @@
             if (savedOffset !== null) setOffsetMinutes(Number(savedOffset));
             else if (localStorage.getItem('last_tz')) setOffsetMinutes(480); // 舊版 IANA 設定轉固定時差；不再依賴裝置時區
             const thr = localStorage.getItem('last_threshold');
-            const thrEl = document.getElementById('altThreshold');
-            if (thr !== null && thrEl && Array.from(thrEl.options).some(o => o.value === String(parseFloat(thr)))) thrEl.value = String(parseFloat(thr));
+            if (thr !== null && Number.isFinite(parseFloat(thr))) setMoonThresholdDeg(parseFloat(thr));
             [['horizN','last_hN'],['horizNE','last_hNE'],['horizE','last_hE'],['horizSE','last_hSE'],['horizS','last_hS'],['horizSW','last_hSW'],['horizW','last_hW'],['horizNW','last_hNW']].forEach(([id, key]) => {
                 const val = localStorage.getItem(key);
                 const el = document.getElementById(id);
@@ -2612,6 +2684,7 @@
         document.getElementById('obsTime').value = `${np.y}-${pad2(np.m)}-${pad2(np.d)}T${pad2(np.h)}:${pad2(np.mi)}`;
         updateTimezoneIndicator();
     updateMoonEvalTitle();
+        startAutoCalc();
     };
 
     
@@ -2664,26 +2737,24 @@
         USER_REQUESTED_CALC = true;
         applySiteTz();
         DBG.lastCalc = { id: __calcId, source: source || 'button', status: 'running' };
-        dbg('calc.start', { calcId: __calcId, source: source || 'button', params: dbgParams() });
-        try {
-    // 更新月光干擾評估標題中的高度角數字
-    const thresholdVal = document.getElementById('altThreshold').value;
-    const moonEvalTitleEl = document.getElementById('divMoonEvalTitle');
-    if (moonEvalTitleEl) {
-        if (currentLang === 'en') {
-            moonEvalTitleEl.innerText = `🌕 Moonlight Interference Evaluation (-${thresholdVal}°)`;
-        } else if (currentLang === 'zh-CN') {
-            moonEvalTitleEl.innerText = `🌕 月光干扰（-${thresholdVal}°）评估`;
-        } else {
-            moonEvalTitleEl.innerText = `🌕 月光干擾（-${thresholdVal}°）評估`;
+        dbg('calc.start', { calcId: __calcId, source: source || 'manual', params: dbgParams() });
+        if (typeof Astronomy === 'undefined') {
+            dbg('calc.error', { calcId: __calcId, reason: 'astronomy-lib-missing' }, 'error');
+            DBG.lastCalc = { id: __calcId, source: source || 'manual', status: 'lib-missing' };
+            showCalcStatus('error', t('calc_err_lib'));
+            loadAstronomyFallback();
+            return;
         }
-    }
+        { const __rc = document.getElementById('resultCard'); if (!__rc || __rc.style.display !== 'block') showCalcStatus('loading', t('calc_status_loading')); }
+        try {
+    // 更新月光干擾評估標題（及 Timeline 標題）中的高度角數字
+    syncMoonThresholdUI();
 
             const locName = document.getElementById('locName').value.trim() || "Observatory";
             const lat = parseFloat(document.getElementById('lat').value);
             const lon = parseFloat(document.getElementById('lon').value);
             const elevation = parseFloat(document.getElementById('alt').value);
-            const baseThresholdDeg = parseFloat(document.getElementById('altThreshold').value);
+            const baseThresholdDeg = getMoonThresholdDeg();
             const timeInputStr = document.getElementById('obsTime').value;
 
             let errors = [];
@@ -2696,7 +2767,7 @@
             if (errors.length > 0) {
                 dbg('calc.validation', { calcId: __calcId, errors }, 'error');
                 DBG.lastCalc = { id: __calcId, source: source || 'button', status: 'validation-error', errors };
-                alert("⚠️ 錯誤：\n\n" + errors.join("\n"));
+                showCalcStatus('error', t('calc_err_input') + ' ' + errors.join('；'));
                 return;
             }
 
@@ -2718,7 +2789,7 @@
             } catch (e) {}
 
             const localDate = parseLocalInput(timeInputStr);
-            if (isNaN(localDate.getTime())) { dbg('calc.error', { calcId: __calcId, reason: 'invalid-localDate', obsTime: timeInputStr }, 'error'); alert("⚠️ " + t('tz_notice_dst')); updateTimezoneIndicator(); return; }
+            if (isNaN(localDate.getTime())) { dbg('calc.error', { calcId: __calcId, reason: 'invalid-localDate', obsTime: timeInputStr }, 'error'); showCalcStatus('error', "⚠️ " + t('tz_notice_dst')); updateTimezoneIndicator(); return; }
             updateTimezoneIndicator();
 
             const observer = new Astronomy.Observer(lat, lon, elevation);
@@ -2802,31 +2873,33 @@
             const moonsetOutOfRange = isOutOfRange(moonset && moonset.date);
 
             const minUnit = currentLang === 'en' ? ' mins' : ' 分鐘';
-            const fmtMin = (ms) => `${Math.max(0, Math.round(ms / 60000))}${minUnit}`;
+            // 畫面上的時間只顯示到「分」（秒數捨去），時間差必須用同一套「分」來相減，才不會與畫面上的兩個時間對不上
+            const minuteOf = (d) => Math.floor(d.getTime() / 60000);
+            const fmtMin = (fromDate, toDate) => `${Math.max(0, minuteOf(toDate) - minuteOf(fromDate))}${minUnit}`;
 
             let deltaAfterMins = `0${minUnit}`;
             if (moonset && moonset.date && dropBelowThreshold && dropBelowThreshold.date) {
-                deltaAfterMins = fmtMin(dropBelowThreshold.date - moonset.date);
+                deltaAfterMins = fmtMin(moonset.date, dropBelowThreshold.date);
             }
 
             let deltaBeforeMins = `0${minUnit}`;
             if (moonrise && moonrise.date && riseToThreshold && riseToThreshold.date) {
-                deltaBeforeMins = fmtMin(moonrise.date - riseToThreshold.date);
+                deltaBeforeMins = fmtMin(riseToThreshold.date, moonrise.date);
             }
 
             let deltaSunsetMins = `0${minUnit}`;
             if (sunset && sunset.date && sunAstroDark && sunAstroDark.date) {
-                deltaSunsetMins = fmtMin(sunAstroDark.date - sunset.date);
+                deltaSunsetMins = fmtMin(sunset.date, sunAstroDark.date);
             }
 
             let deltaSunriseMins = `0${minUnit}`;
             if (sunrise && sunrise.date && sunAstroDawn && sunAstroDawn.date) {
-                deltaSunriseMins = fmtMin(sunrise.date - sunAstroDawn.date);
+                deltaSunriseMins = fmtMin(sunAstroDawn.date, sunrise.date);
             }
 
             document.getElementById('resLocationName').innerText = locName;
-            document.getElementById('resPhase').innerText = `${t(phaseKey)} (P = ${P.toFixed(1)}%)`;
-            document.getElementById('resThreshold').innerText = `${thresholdAlt.toFixed(2)}°`;
+            document.getElementById('resPhase').innerText = `${t(phaseKey)} (P = ${Math.round(P)}%)`;
+            document.getElementById('resThreshold').innerText = `${Math.round(thresholdAlt)}°`;
 
             const moonriseEl = document.getElementById('resMoonrise');
             if (moonriseEl) {
@@ -2897,7 +2970,7 @@
             if (!sunset || !sunset.date || !sunrise || !sunrise.date) {
                 dbg('calc.error', { calcId: __calcId, reason: 'sunset-or-sunrise-missing' }, 'error');
                 DBG.lastCalc = { id: __calcId, source: source || 'button', status: 'no-sunset-sunrise' };
-                alert('⚠️ 此日期/地點沒有明確的日落或日出（極晝/極夜），無法繪製時間軸。');
+                showCalcStatus('error', t('calc_err_polar'));
                 document.getElementById('resultCard').style.display = 'block';
                 return;
             }
@@ -3325,13 +3398,14 @@
             }
             document.getElementById('targetSepResultContainer').innerHTML = targetHtml;
             document.getElementById('resultCard').style.display = 'block';
+            hideCalcStatus();
             const __ms = Math.round(performance.now() - __t0);
             DBG.lastCalc = { id: __calcId, source: source || 'button', status: 'ok', ms: __ms, timelineOk: __tlOk, utcOffsetMinutes: SITE_OFFSET_MINUTES };
             dbg('calc.done', { calcId: __calcId, ms: __ms, timelineOk: __tlOk }, __tlOk ? 'info' : 'warn');
         } catch (err) {
             DBG.lastCalc = { id: __calcId, source: source || 'button', status: 'error', message: err.message };
             dbg('calc.error', { calcId: __calcId, message: err.message, stack: err.stack }, 'error');
-            alert('❌ 錯誤：' + err.message);
+            showCalcStatus('error', t('calc_err_generic') + ' ' + err.message);
         }
     }
 
@@ -3372,7 +3446,7 @@
             if (!(slotMinutes > 0)) { alert("⚠️ 拍攝時長無效"); return; }
             const slotMs = slotMinutes * 60000;
             const seqSortMode = document.getElementById('seqSortMode').value;
-            const baseThresholdDeg = parseFloat(document.getElementById('altThreshold').value) || 12;
+            const baseThresholdDeg = getMoonThresholdDeg() || 12;
 
             let allTargets = getAllTargets();
             const filterMode = document.getElementById('targetFilterSelect').value;
@@ -3473,7 +3547,7 @@
                         if (score > bestScore) {
                             bestScore = score;
                             bestTarget = target;
-                            const thrTxt = slotThreshold.toFixed(1);
+                            const thrTxt = Math.round(slotThreshold);
                             const moonNote = moonUp ? '' : (currentLang === 'en' ? ` (moon below ${thrTxt}° altitude)` : (currentLang === 'zh-CN' ? ` (月亮低于地平线 ${thrTxt}°)` : ` (月亮低於地平線 ${thrTxt}°)`));
                             const fitNote = fit.score >= 0 ? (currentLang === 'en' ? ` · Fit ${fit.score.toFixed(0)}/100` : ` · 器材適配 ${fit.score.toFixed(0)}/100`) : (currentLang === 'en' ? ' · Fit unknown' : ' · 適配未知');
                             const altLbl = currentLang === 'en' ? 'Target alt' : '目標高度';
