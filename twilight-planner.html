@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">深空拍攝規劃與動態月光/曙暮光計算器 v0.5.21</title>
+    <title id="pageTitle">深空拍攝規劃與動態月光/曙暮光計算器 v0.5.22</title>
     <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.js"></script>
     <style>
         :root {
@@ -389,12 +389,18 @@
         .calc-status.error { border-color: #f43f5e; background: rgba(244,63,94,0.12); color: var(--text-main); }
         .calc-retry { width: auto; margin: 6px 0 0 0; padding: 5px 12px; font-size: 0.85rem; background: #0284c7; color: #fff; display: inline-block; }
         .btn-refresh { width: auto; margin: 0 0 0 6px; padding: 3px 10px; font-size: 0.78rem; font-weight: normal; background: #0f766e; color: #fff; border-radius: 14px; vertical-align: middle; }
+    .result-help{display:inline-block;position:relative;margin-left:6px;vertical-align:middle;font-size:.85rem}
+.result-help summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;user-select:none}
+.result-help summary::-webkit-details-marker{display:none}
+.result-help[open] summary{background:rgba(245,158,11,.14)}
+.result-help-pop{position:absolute;z-index:30;right:0;top:30px;width:min(82vw,340px);padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--card-bg,#172033);color:var(--text-main);box-shadow:0 6px 22px rgba(0,0,0,.28);font-size:.82rem;line-height:1.55;font-weight:normal}
+.danger-zone{margin-top:18px;padding-top:12px;border-top:1px solid rgba(244,63,94,.35)}.danger-zone .btn-reset{margin-top:8px}
 </style>
 </head>
 <body>
 <div class="container">
     <div style="margin-bottom: 15px;">
-        <h2 data-i18n="app_title" style="font-size: 1.25rem; line-height: 1.4; margin-bottom: 10px; color: #38bdf8; text-align: center; width: 100%; display: block;">🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.5.21</h2>
+        <h2 data-i18n="app_title" style="font-size: 1.25rem; line-height: 1.4; margin-bottom: 10px; color: #38bdf8; text-align: center; width: 100%; display: block;">🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.5.22</h2>
         <div style="display: flex; align-items: center; justify-content: flex-end; width: 100%;">
             <div style="display: flex; align-items: center; gap: 6px;">
                 <span style="font-size: 0.9rem;">🌐</span>
@@ -429,22 +435,23 @@
     </div>
 
     <div class="form-group" style="margin-top: 5px;">
-        <button type="button" class="btn-reset" onclick="resetAllParameters()" data-i18n="btn_reset" style="margin-bottom: 10px;">🔄 重設（恢復預設值)</button>
+        
         <label data-i18n="lbl_obs_time">查詢當晚日期與時間 (當地時間)</label>
         <input type="datetime-local" id="obsTime" onchange="onObservationInputChange()">
     </div>
 
         <div class="form-group">
         <label data-i18n="lbl_threshold">滿月干擾於地平線下的高度角 (°)</label>
-        <div class="slider-container">
-            <input type="range" id="altThreshold" min="-18" max="-6" step="1" value="-12" oninput="onMoonThresholdInput()" onchange="onMoonThresholdChange()">
-            <span class="slider-value" id="altThresholdVal" style="min-width: 56px; text-align: right;">-12°</span>
-        </div>
+        <select id="altThreshold" onchange="onMoonThresholdChange()" aria-label="滿月干擾高度角">
+<option value="-6">−6°</option><option value="-8">−8°</option><option value="-10">−10°</option>
+<option value="-12" selected>−12°</option><option value="-14">−14°</option><option value="-16">−16°</option><option value="-18">−18°</option>
+</select>
     </div>
     <div id="calcStatus" class="calc-status" role="status" aria-live="polite" style="display:none;"></div>
 
     <div class="result-card" id="resultCard" style="display:none;">
-        <h3><span data-i18n="res_report_title">📊 評估結果報告</span> <span id="resTimezoneBadge" style="font-size: 0.8rem; font-weight: normal; color: #38bdf8;"></span> <button type="button" class="btn-refresh" onclick="requestRecalc('refresh')" data-i18n="btn_refresh">🔄 重新計算</button></h3>
+        <h3><span data-i18n="res_report_title">📊 評估結果報告</span> <span id="resTimezoneBadge" style="font-size:0.8rem;font-weight:normal;color:#38bdf8;"></span>
+<details class="result-help"><summary aria-label="評估結果異常提示" title="評估結果異常提示">⚠️</summary><div class="result-help-pop" data-i18n="result_help_text">評估結果或 Timeline 顯示異常？請展開「資料備份與檔案交換，進階診斷」，使用「重新計算」或匯出 Debug Log，以便檢查問題。</div></details></h3>
         
         <div class="result-item">
             <span class="result-label" data-i18n="res_loc_label">當前使用地點：</span>
@@ -509,7 +516,7 @@
             <div class="form-group"><label for="customSensorWidth" data-i18n="lbl_sensor_w">感光元件寬度 (mm)</label><input type="number" id="customSensorWidth" min="0.1" step="0.01" value="6.3" onchange="updateTelescopeFov(); recalcIfVisible()"></div>
             <div class="form-group"><label for="customSensorHeight" data-i18n="lbl_sensor_h">感光元件高度 (mm)</label><input type="number" id="customSensorHeight" min="0.1" step="0.01" value="11.2" onchange="updateTelescopeFov(); recalcIfVisible()"></div>
         </div>
-        <div id="telescopeFovInfo" style="font-size:0.78rem;color:var(--text-muted);margin:-4px 0 2px;">目前畫面視野（長邊 × 短邊）：約 4.0° × 2.25°</div><div class="sect-note" data-i18n="scope_fit_note">適配分數以固定矩形畫面估算；未提供天體位置角時，會測試各種可能方向並顯示「可完整入框的方向比例」（不是成功機率）。非實際構圖保證。</div>
+        <div id="telescopeFovInfo" style="font-size:0.78rem;color:var(--text-muted);margin:-4px 0 2px;">目前畫面視野（長邊 × 短邊）：約 4.0° × 2.25°</div><div class="sect-note" data-i18n="scope_fit_note">器材適配分數依目標角尺寸與目前畫面視野估算；大型目標不會因無法單張完整入框而被扣分，實際構圖仍請以拍攝畫面為準。</div>
     </div>
 
     <div class="plan-card" id="targetCard">
@@ -749,7 +756,9 @@
                 <input type="file" id="importCSVFile" accept=".csv" style="display:none" onchange="importTargetsCSV(event)">
             </div>
         </div>
-    <details id="dbgPanel" class="dbg-panel" ontoggle="dbgOnToggle()">
+    <div class="section-divider" style="margin-top:16px;" data-i18n="diag_heading">🛠️ 診斷與修復</div>
+<div class="row"><div class="form-group" style="flex:1;"><button type="button" class="btn-refresh" onclick="requestRecalc('refresh')" data-i18n="btn_refresh">🔄 重新計算</button></div></div>
+<details id="dbgPanel" class="dbg-panel" ontoggle="dbgOnToggle()">
         <summary data-i18n="dbg_title">🛠️ 進階診斷（Debug Log）</summary>
         <div class="dbg-hint" data-i18n="dbg_hint">平常收起即可。發生計算或 Timeline 異常時，請展開後按「複製紀錄」或「匯出 TXT」，把內容提供給開發者判斷是哪個環節出錯。</div>
         <div class="dbg-actions">
@@ -760,6 +769,8 @@
         <div id="dbgStatus" class="dbg-status" role="status"></div>
         <pre id="dbgLogText" class="dbg-pre"></pre>
     </details>
+    <div class="danger-zone"><div class="sect-note" data-i18n="reset_backup_note">恢復預設值會清除目前設定與自訂資料；建議先匯出完整設定 JSON 備份。</div>
+    <button type="button" class="btn-reset" onclick="resetAllParameters()" data-i18n="btn_reset">🔄 重設（恢復預設值）</button></div>
     </div>
 
     </div>
@@ -781,7 +792,7 @@
     // ---------------------------------------------------------
     const i18n = {
         'zh-TW': {
-            app_title: "🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.5.21",
+            app_title: "🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.5.22",
             calc_status_loading: "⏳ 正在計算評估結果…",
             calc_err_lib: "⚠️ 天文計算函式庫尚未載入（可能是網路問題），已嘗試備用來源。請確認網路後按「🔄 重新計算」。",
             calc_err_input: "⚠️ 參數有誤：",
@@ -795,7 +806,7 @@
             legend_twilight: "曙暮光（曙）",
             timeline_sub: "日落 → 次日日出",
             lbl_moon_sep: "月角距",
-            scope_fit_note: "適配分數以固定矩形畫面估算；未提供天體位置角時，會測試各種可能方向並顯示「可完整入框的方向比例」（不是成功機率）。非實際構圖保證。",
+            scope_fit_note: "器材適配分數依目標角尺寸與目前畫面視野估算；大型目標不會因無法單張完整入框而被扣分，實際構圖仍請以拍攝畫面為準。",
             seq_stale_text: "目前顯示的是上一次生成的排程，與最新參數可能不一致。請按「🚀 生成每小時最佳拍攝優先序列」更新。",
             seq_stale_title: "參數已變更",
             div_target_filters: "🎯 目標篩選與排列",
@@ -804,6 +815,9 @@
             timeline_title: "🌌 觀測夜時間軸",
             dbg_title: "🛠️ 進階診斷（Debug Log）",
             dbg_hint: "平常收起即可。發生計算或 Timeline 異常時，請展開後按「複製紀錄」或「匯出 TXT」，把內容提供給開發者判斷是哪個環節出錯。",
+            diag_heading: "🛠️ 診斷與修復",
+            result_help_text: "評估結果或 Timeline 顯示異常？請展開「資料備份與檔案交換，進階診斷」，使用「重新計算」或匯出 Debug Log，以便檢查問題。",
+            reset_backup_note: "恢復預設值會清除目前設定與自訂資料；建議先匯出完整設定 JSON 備份。",
             dbg_copy: "📋 複製紀錄",
             dbg_export: "💾 匯出 TXT",
             dbg_clear: "🗑 清除紀錄",
@@ -928,7 +942,7 @@
             new_moon: "新月", crescent: "娥眉月", first_quarter: "上弦月", waxing_gibbous: "盈凸月", full_moon: "滿月", waning_gibbous: "虧凸月", third_quarter: "下弦月", waning_crescent: "殘月"
         },
         'zh-CN': {
-            app_title: "🌙 深空拍摄规划与动态月光/曙暮光计算器 v0.5.21",
+            app_title: "🌙 深空拍摄规划与动态月光/曙暮光计算器 v0.5.22",
             calc_status_loading: "⏳ 正在计算评估结果…",
             calc_err_lib: "⚠️ 天文计算函数库尚未载入（可能是网络问题），已尝试备用来源。请确认网络后按“🔄 重新计算”。",
             calc_err_input: "⚠️ 参数有误：",
@@ -942,7 +956,7 @@
             legend_twilight: "曙暮光（曙）",
             timeline_sub: "日落 → 次日日出",
             lbl_moon_sep: "月角距",
-            scope_fit_note: "适配分数以固定矩形画面估算；未提供天体位置角时，会测试各种可能方向并显示“可完整入框的方向比例”（不是成功概率）。非实际构图保证。",
+            scope_fit_note: "器材适配分数依据目标角尺寸与当前画面视野估算；大型目标不会因无法单张完整入框而被扣分，实际构图仍请以拍摄画面为准。",
             seq_stale_text: "目前显示的是上一次生成的排程，与最新参数可能不一致。请按“🚀 生成每小时最佳拍摄优先序列”更新。",
             seq_stale_title: "参数已更改",
             div_target_filters: "🎯 目标筛选与排列",
@@ -951,6 +965,9 @@
             timeline_title: "🌌 观测夜时间轴",
             dbg_title: "🛠️ 高级诊断（Debug Log）",
             dbg_hint: "平常收起即可。发生计算或 Timeline 异常时，请展开后按“复制记录”或“导出 TXT”，把内容提供给开发者判断是哪个环节出错。",
+            diag_heading: "🛠️ 诊断与修复",
+            result_help_text: "评估结果或 Timeline 显示异常？请展开“数据备份与文件交换，高级诊断”，使用“重新计算”或导出 Debug Log，以便检查问题。",
+            reset_backup_note: "恢复默认值会清除当前设置与自定义数据；建议先导出完整设置 JSON 备份。",
             dbg_copy: "📋 复制记录",
             dbg_export: "💾 导出 TXT",
             dbg_clear: "🗑 清除记录",
@@ -1075,7 +1092,7 @@
             new_moon: "新月", crescent: "蛾眉月", first_quarter: "上弦月", waxing_gibbous: "盈凸月", full_moon: "满月", waning_gibbous: "亏凸月", third_quarter: "下弦月", waning_crescent: "残月"
         },
         'en': {
-            app_title: "🌙 Deep-Sky Schedule & Dynamic Moon/Twilight Calculator v0.5.21",
+            app_title: "🌙 Deep-Sky Schedule & Dynamic Moon/Twilight Calculator v0.5.22",
             calc_status_loading: "⏳ Calculating…",
             calc_err_lib: "⚠️ The astronomy library could not be loaded (possibly a network problem); a backup source was tried. Check your connection and press “🔄 Recalculate”.",
             calc_err_input: "⚠️ Invalid input:",
@@ -1089,7 +1106,7 @@
             legend_twilight: "Twilight (Twi)",
             timeline_sub: "Sunset → next sunrise",
             lbl_moon_sep: "Moon sep",
-            scope_fit_note: "Fit scores assume a fixed rectangular frame. When a target position angle is unavailable, all possible orientations are tested and the share of orientations that fit completely is shown (not a success probability). It does not guarantee a real framing.",
+            scope_fit_note: "Equipment-fit scores are estimated from target angular size and the current field of view. Large targets are not penalized merely because they cannot fit in a single frame; check the live framing before imaging.",
             seq_stale_text: "The schedule shown was generated with earlier parameters and may no longer match. Press “🚀 Generate Optimal Hourly Priority Sequence” to update it.",
             seq_stale_title: "Parameters changed",
             div_target_filters: "🎯 Target Filters & Sorting",
@@ -1098,6 +1115,9 @@
             timeline_title: "🌌 Observing-Night Timeline",
             dbg_title: "🛠️ Advanced Diagnostics (Debug Log)",
             dbg_hint: "Keep this collapsed normally. If a calculation or the timeline misbehaves, expand it and use Copy or Export TXT, then send the content to the developer.",
+            diag_heading: "🛠️ Diagnostics & Repair",
+            result_help_text: "Is the assessment or timeline displaying incorrectly? Expand “Data Backup, File Exchange & Advanced Diagnostics”, then use Recalculate or export the Debug Log to help investigate.",
+            reset_backup_note: "Restoring defaults clears current settings and custom data. Export a full JSON backup first.",
             dbg_copy: "📋 Copy log",
             dbg_export: "💾 Export TXT",
             dbg_clear: "🗑 Clear log",
@@ -1460,7 +1480,7 @@
         if (!el) return;
         let d = Math.round(Math.abs(Number(posDeg)));
         if (!Number.isFinite(d)) d = 12;
-        d = Math.min(18, Math.max(6, d));
+        d = Math.min(18, Math.max(6, Math.round(d / 2) * 2));
         el.value = String(-d);
         syncMoonThresholdUI();
     }
@@ -1469,8 +1489,6 @@
         if (valEl) valEl.innerText = `-${getMoonThresholdDeg()}°`;
         updateMoonEvalTitle();
     }
-    function onMoonThresholdInput() { syncMoonThresholdUI(); }
-
     function updateMoonEvalTitle() {
         const thresholdVal = getMoonThresholdDeg();
         const moonEvalTitleEl = document.getElementById('divMoonEvalTitle');
@@ -1964,7 +1982,7 @@
 
     // ===================== 固定 UTC offset 時間支援 =====================
     // 絕對時刻以 UTC Date 儲存；顯示和輸入依觀測地固定 offset 轉換，不讀取裝置時區。
-    // v0.5.21：固定 UTC offset。內部 Date 一律代表 UTC 絕對時刻；顯示/輸入再套用觀測地 offset。
+    // v0.5.22：固定 UTC offset。內部 Date 一律代表 UTC 絕對時刻；顯示/輸入再套用觀測地 offset。
     let SITE_OFFSET_MINUTES = 480;
     let TZ_STATUS = 'manual';
     const pad2 = (n) => String(n).padStart(2, '0');
@@ -2592,9 +2610,17 @@
     }
 
     function resetAllParameters() {
-        if (!confirm('確定要重設所有參數嗎？')) return;
-        localStorage.clear();
-        location.reload();
+        const msg = currentLang === 'en'
+            ? 'Restore all defaults? This will erase current settings and custom data. Please export a full JSON backup first. Continue?'
+            : (currentLang === 'zh-CN' ? '确定要恢复默认值吗？这会清除当前设置与自定义数据。建议先导出完整 JSON 备份。是否继续？'
+            : '確定要恢復預設值嗎？這會清除目前設定與自訂資料。建議先匯出完整 JSON 備份。是否繼續？');
+        if (!confirm(msg)) return;
+        try {
+            localStorage.clear();
+            alert(currentLang === 'en' ? 'Defaults restored. The page will now reload.'
+                : (currentLang === 'zh-CN' ? '已恢复默认值，页面即将重新载入。' : '已恢復預設值，頁面即將重新載入。'));
+            location.reload();
+        } catch (err) { alert((currentLang === 'en' ? 'Reset failed: ' : '重設失敗：') + err.message); }
     }
 
     window.addEventListener('resize', function() {
