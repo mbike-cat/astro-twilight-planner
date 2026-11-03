@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">深空拍攝規劃與動態月光/曙暮光計算器 v0.5.22</title>
+    <title id="pageTitle">深空拍攝規劃與動態月光/曙暮光計算器 v0.6.0</title>
     <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.js"></script>
     <style>
         :root {
@@ -400,7 +400,7 @@
 <body>
 <div class="container">
     <div style="margin-bottom: 15px;">
-        <h2 data-i18n="app_title" style="font-size: 1.25rem; line-height: 1.4; margin-bottom: 10px; color: #38bdf8; text-align: center; width: 100%; display: block;">🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.5.22</h2>
+        <h2 data-i18n="app_title" style="font-size: 1.25rem; line-height: 1.4; margin-bottom: 10px; color: #38bdf8; text-align: center; width: 100%; display: block;">🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.6.0</h2>
         <div style="display: flex; align-items: center; justify-content: flex-end; width: 100%;">
             <div style="display: flex; align-items: center; gap: 6px;">
                 <span style="font-size: 0.9rem;">🌐</span>
@@ -415,13 +415,116 @@
     
     <div class="layout">
     <div class="col-main">
+    <button type="button" class="sect-toggle" aria-expanded="false" aria-controls="obsSectionContainer" onclick="toggleSection('obsSectionContainer', this)" data-i18n="btn_toggle_obs">📂 展開/收合 觀察地點與地平線設定</button>
+    <div id="obsSectionContainer" class="sect-body">
+        <div class="section-divider" style="margin-top:0;" data-i18n="div_obs_settings">觀察地點設定 (上限10個，可刪除)</div>
+
+        <div class="form-group">
+            <label data-i18n="lbl_obs_name">地點名稱 (例如：河北萬象天文台)</label>
+            <input type="text" id="locName" value="香港大帽山 Tai Mo Shan, Hong Kong" data-i18n-placeholder="placeholder_obs_name" placeholder="輸入自訂地點名稱">
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label data-i18n="lbl_lat">緯度 (Lat, -90° ~ +90°)</label>
+                <input type="number" id="lat" value="40.4006" min="-90" max="90" step="0.0001" oninput="updateTimezoneIndicator()" onchange="requestRecalc('latitude')">
+            </div>
+            <div class="form-group">
+                <label data-i18n="lbl_lon">經度 (Lon, -180° ~ +180°)</label>
+                <input type="number" id="lon" value="117.5890" min="-180" max="180" step="0.0001" oninput="updateTimezoneIndicator()" onchange="requestRecalc('longitude')">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label data-i18n="lbl_alt">海拔 (-500 ~ 9000公尺)</label>
+                <input type="number" id="alt" onchange="requestRecalc('elevation')" value="50" min="-500" max="9000" step="1">
+            </div>
+        </div>
+
+
+
+        <div class="section-divider" data-i18n="div_horizon">⛰️ 自訂地平線障礙物微調 (8個方位，正負22.5°)</div>
+        <div class="row">
+            <div class="form-group">
+                <label data-i18n="lbl_horiz_n">北方 N (337.5°~22.5°)</label>
+                <div class="slider-container">
+                    <span class="slider-value" id="horizNVal" style="min-width: 45px; text-align: left;">15°</span>
+                    <input type="range" id="horizN" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizNVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="lbl_horiz_ne">東北 NE (22.5°~67.5°)</label>
+                <div class="slider-container">
+                    <input type="range" id="horizNE" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizNEVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
+                    <span class="slider-value" id="horizNEVal" style="min-width: 45px; text-align: right;">15°</span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group">
+                <label data-i18n="lbl_horiz_e">東方 E (67.5°~112.5°)</label>
+                <div class="slider-container">
+                    <span class="slider-value" id="horizEVal" style="min-width: 45px; text-align: left;">15°</span>
+                    <input type="range" id="horizE" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizEVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="lbl_horiz_se">東南 SE (112.5°~157.5°)</label>
+                <div class="slider-container">
+                    <input type="range" id="horizSE" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizSEVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
+                    <span class="slider-value" id="horizSEVal" style="min-width: 45px; text-align: right;">15°</span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group">
+                <label data-i18n="lbl_horiz_s">南方 S (157.5°~202.5°)</label>
+                <div class="slider-container">
+                    <span class="slider-value" id="horizSVal" style="min-width: 45px; text-align: left;">15°</span>
+                    <input type="range" id="horizS" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizSVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="lbl_horiz_sw">西南 SW (202.5°~247.5°)</label>
+                <div class="slider-container">
+                    <input type="range" id="horizSW" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizSWVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
+                    <span class="slider-value" id="horizSWVal" style="min-width: 45px; text-align: right;">15°</span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group">
+                <label data-i18n="lbl_horiz_w">西方 W (247.5°~292.5°)</label>
+                <div class="slider-container">
+                    <span class="slider-value" id="horizWVal" style="min-width: 45px; text-align: left;">15°</span>
+                    <input type="range" id="horizW" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizWVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="lbl_horiz_nw">西北 NW (292.5°~337.5°)</label>
+                <div class="slider-container">
+                    <input type="range" id="horizNW" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizNWVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
+                    <span class="slider-value" id="horizNWVal" style="min-width: 45px; text-align: right;">15°</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group" style="flex:1;">
+                <button type="button" class="btn-secondary" onclick="saveCurrentLocation()" data-i18n="btn_save_loc">💾 儲存當前地點</button>
+            </div>
+        </div>
+        <div style="margin-top: 10px; font-size: 0.9rem; font-weight: bold; color: #38bdf8;" data-i18n="div_loc_mgmt">📍 已儲存自訂地點管理 (上限10個)</div>
+        <div class="target-box" id="locationListBox"></div>
+    </div>
+
     <div class="form-group">
-        <label data-i18n="lbl_select_obs">選擇常用天文台地點</label>
+        <label data-i18n="lbl_select_obs">選擇常用觀察地點</label>
         <select id="locationSelect" onchange="loadSelectedLocation()">
             
         </select>
     </div>
-
 
     <div class="form-group" style="margin-top: 15px;">
         <label>🕒 觀測地 UTC 時差（所有時間以觀測地當地時間顯示）</label>
@@ -594,7 +697,6 @@
         <button type="button" class="btn-secondary" onclick="addObservingTarget()" data-i18n="btn_add_target">➕ 新增/更新拍攝目標</button>
         
 
-
         <div class="target-box" id="targetListBox"></div>
     </div>
 
@@ -629,110 +731,6 @@
             <div data-i18n="seq_stale_text">目前顯示的是上一次生成的排程，與最新參數可能不一致。請按「🚀 生成每小時最佳拍攝優先序列」更新。</div>
         </div>
         <div id="sequenceResultContainer" style="margin-top: 10px; font-size: 0.9rem;"></div>
-    </div>
-
-    <button type="button" class="sect-toggle" aria-expanded="false" aria-controls="obsSectionContainer" onclick="toggleSection('obsSectionContainer', this)" data-i18n="btn_toggle_obs">📂 展開/收合 天文台地點與地平線設定</button>
-    <div id="obsSectionContainer" class="sect-body">
-        <div class="section-divider" style="margin-top:0;" data-i18n="div_obs_settings">天文台地點設定 (上限10個，可刪除)</div>
-
-        <div class="form-group">
-            <label data-i18n="lbl_obs_name">地點名稱 (例如：河北萬象天文台)</label>
-            <input type="text" id="locName" value="香港大帽山 Tai Mo Shan, Hong Kong" data-i18n-placeholder="placeholder_obs_name" placeholder="輸入自訂地點名稱">
-        </div>
-
-        <div class="row">
-            <div class="form-group">
-                <label data-i18n="lbl_lat">緯度 (Lat, -90° ~ +90°)</label>
-                <input type="number" id="lat" value="40.4006" min="-90" max="90" step="0.0001" oninput="updateTimezoneIndicator()" onchange="requestRecalc('latitude')">
-            </div>
-            <div class="form-group">
-                <label data-i18n="lbl_lon">經度 (Lon, -180° ~ +180°)</label>
-                <input type="number" id="lon" value="117.5890" min="-180" max="180" step="0.0001" oninput="updateTimezoneIndicator()" onchange="requestRecalc('longitude')">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="form-group">
-                <label data-i18n="lbl_alt">海拔 (-500 ~ 9000公尺)</label>
-                <input type="number" id="alt" onchange="requestRecalc('elevation')" value="50" min="-500" max="9000" step="1">
-            </div>
-        </div>
-
-
-
-        <div class="section-divider" data-i18n="div_horizon">⛰️ 自訂地平線障礙物微調 (8個方位，正負22.5°)</div>
-        <div class="row">
-            <div class="form-group">
-                <label data-i18n="lbl_horiz_n">北方 N (337.5°~22.5°)</label>
-                <div class="slider-container">
-                    <span class="slider-value" id="horizNVal" style="min-width: 45px; text-align: left;">15°</span>
-                    <input type="range" id="horizN" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizNVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
-                </div>
-            </div>
-            <div class="form-group">
-                <label data-i18n="lbl_horiz_ne">東北 NE (22.5°~67.5°)</label>
-                <div class="slider-container">
-                    <input type="range" id="horizNE" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizNEVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
-                    <span class="slider-value" id="horizNEVal" style="min-width: 45px; text-align: right;">15°</span>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="form-group">
-                <label data-i18n="lbl_horiz_e">東方 E (67.5°~112.5°)</label>
-                <div class="slider-container">
-                    <span class="slider-value" id="horizEVal" style="min-width: 45px; text-align: left;">15°</span>
-                    <input type="range" id="horizE" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizEVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
-                </div>
-            </div>
-            <div class="form-group">
-                <label data-i18n="lbl_horiz_se">東南 SE (112.5°~157.5°)</label>
-                <div class="slider-container">
-                    <input type="range" id="horizSE" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizSEVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
-                    <span class="slider-value" id="horizSEVal" style="min-width: 45px; text-align: right;">15°</span>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="form-group">
-                <label data-i18n="lbl_horiz_s">南方 S (157.5°~202.5°)</label>
-                <div class="slider-container">
-                    <span class="slider-value" id="horizSVal" style="min-width: 45px; text-align: left;">15°</span>
-                    <input type="range" id="horizS" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizSVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
-                </div>
-            </div>
-            <div class="form-group">
-                <label data-i18n="lbl_horiz_sw">西南 SW (202.5°~247.5°)</label>
-                <div class="slider-container">
-                    <input type="range" id="horizSW" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizSWVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
-                    <span class="slider-value" id="horizSWVal" style="min-width: 45px; text-align: right;">15°</span>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="form-group">
-                <label data-i18n="lbl_horiz_w">西方 W (247.5°~292.5°)</label>
-                <div class="slider-container">
-                    <span class="slider-value" id="horizWVal" style="min-width: 45px; text-align: left;">15°</span>
-                    <input type="range" id="horizW" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizWVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
-                </div>
-            </div>
-            <div class="form-group">
-                <label data-i18n="lbl_horiz_nw">西北 NW (292.5°~337.5°)</label>
-                <div class="slider-container">
-                    <input type="range" id="horizNW" min="0" max="90" step="5" value="15" oninput="document.getElementById('horizNWVal').innerText = this.value + '°'" onchange="requestRecalc('horizon')">
-                    <span class="slider-value" id="horizNWVal" style="min-width: 45px; text-align: right;">15°</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="form-group" style="flex:1;">
-                <button type="button" class="btn-secondary" onclick="saveCurrentLocation()" data-i18n="btn_save_loc">💾 儲存當前地點</button>
-            </div>
-        </div>
-        <div style="margin-top: 10px; font-size: 0.9rem; font-weight: bold; color: #38bdf8;" data-i18n="div_loc_mgmt">📍 已儲存自訂地點管理 (上限10個)</div>
-        <div class="target-box" id="locationListBox"></div>
     </div>
 
     <button type="button" class="sect-toggle" aria-expanded="false" aria-controls="backupSectionContainer" onclick="toggleSection('backupSectionContainer', this)" data-i18n="btn_toggle_backup">📂 展開/收合 資料備份與檔案交換，進階診斷</button>
@@ -792,7 +790,7 @@
     // ---------------------------------------------------------
     const i18n = {
         'zh-TW': {
-            app_title: "🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.5.22",
+            app_title: "🌙 深空拍攝規劃與動態月光/曙暮光計算器 v0.6.0",
             calc_status_loading: "⏳ 正在計算評估結果…",
             calc_err_lib: "⚠️ 天文計算函式庫尚未載入（可能是網路問題），已嘗試備用來源。請確認網路後按「🔄 重新計算」。",
             calc_err_input: "⚠️ 參數有誤：",
@@ -821,7 +819,7 @@
             dbg_copy: "📋 複製紀錄",
             dbg_export: "💾 匯出 TXT",
             dbg_clear: "🗑 清除紀錄",
-            lbl_site_tz: "🕒 天文台當地時區 (所有時間以此顯示)",
+            lbl_site_tz: "🕒 觀察地點當地時區 (所有時間以此顯示)",
             opt_tz_auto: "🌐 自動（依座標判斷）",
             opt_tz_device: "📱 手機/裝置時區",
             tz_notice_auto: "自動時區是依座標作粗略估算，並非全球精確時區邊界資料。若觀測地點靠近時區邊界或未能識別，請手動選擇 IANA 時區。",
@@ -858,7 +856,7 @@
             seq_header_target: "推薦目標",
             seq_header_info: "目標高度 / 月角距 / 器材適配",
             seq_no_data: "當前入夜時段無符合條件的目標可供排程",
-            lbl_select_obs: "選擇常用天文台地點",
+            lbl_select_obs: "選擇常用觀察地點",
             lbl_obs_name: "地點名稱 (例如：河北萬象天文台)",
             placeholder_obs_name: "輸入自訂地點名稱",
             lbl_lat: "緯度 (Lat, -90° ~ +90°)",
@@ -936,13 +934,13 @@
             lbl_horiz_south: "南方 (90°~180°) 最低高度",
             lbl_horiz_west: "西方 (180°~270°) 最低高度",
             lbl_horiz_north: "北方 (270°~360°) 最低高度",
-            btn_toggle_obs: "📂 展開/收合 天文台地點與地平線設定",
-            div_obs_settings: "天文台地點設定 (上限10個，可刪除)",
+            btn_toggle_obs: "📂 展開/收合 觀察地點與地平線設定",
+            div_obs_settings: "觀察地點設定 (上限10個，可刪除)",
             alert_max_loc: "⚠️ 滿10個，如需加入請刪除儲存的地點",
             new_moon: "新月", crescent: "娥眉月", first_quarter: "上弦月", waxing_gibbous: "盈凸月", full_moon: "滿月", waning_gibbous: "虧凸月", third_quarter: "下弦月", waning_crescent: "殘月"
         },
         'zh-CN': {
-            app_title: "🌙 深空拍摄规划与动态月光/曙暮光计算器 v0.5.22",
+            app_title: "🌙 深空拍摄规划与动态月光/曙暮光计算器 v0.6.0",
             calc_status_loading: "⏳ 正在计算评估结果…",
             calc_err_lib: "⚠️ 天文计算函数库尚未载入（可能是网络问题），已尝试备用来源。请确认网络后按“🔄 重新计算”。",
             calc_err_input: "⚠️ 参数有误：",
@@ -971,7 +969,7 @@
             dbg_copy: "📋 复制记录",
             dbg_export: "💾 导出 TXT",
             dbg_clear: "🗑 清除记录",
-            lbl_site_tz: "🕒 天文台当地时区 (所有时间以此显示)",
+            lbl_site_tz: "🕒 观察地点当地时区 (所有时间以此显示)",
             opt_tz_auto: "🌐 自动（依坐标判断）",
             opt_tz_device: "📱 手机/设备时区",
             tz_notice_auto: "自动时区是根据坐标作粗略估算，并非全球精确时区边界资料。若观测地点靠近时区边界或无法识别，请手动选择 IANA 时区。",
@@ -1006,7 +1004,7 @@
             seq_header_time: "拍摄时段",
             seq_header_target: "推荐目标",
             seq_no_data: "当前入夜时段无符合条件的目标可供排程",
-            lbl_select_obs: "选择常用天文台地点",
+            lbl_select_obs: "选择常用观察地点",
             lbl_obs_name: "地点名称 (例如：河北万象天文台)",
             placeholder_obs_name: "输入自定义地点名称",
             lbl_lat: "纬度 (Lat, -90° ~ +90°)",
@@ -1086,13 +1084,13 @@
             lbl_horiz_south: "南方 (90°~180°) 最低高度",
             lbl_horiz_west: "西方 (180°~270°) 最低高度",
             lbl_horiz_north: "北方 (270°~360°) 最低高度",
-            btn_toggle_obs: "📂 展开/收合 天文台地点与地平线设定",
-            div_obs_settings: "天文台地点设定 (上限10个，可删除)",
+            btn_toggle_obs: "📂 展开/收合 观察地点与地平线设定",
+            div_obs_settings: "观察地点设定 (上限10个，可删除)",
             alert_max_loc: "⚠️ 滿10個，如需加入請刪除儲存的地點",
             new_moon: "新月", crescent: "蛾眉月", first_quarter: "上弦月", waxing_gibbous: "盈凸月", full_moon: "满月", waning_gibbous: "亏凸月", third_quarter: "下弦月", waning_crescent: "残月"
         },
         'en': {
-            app_title: "🌙 Deep-Sky Schedule & Dynamic Moon/Twilight Calculator v0.5.22",
+            app_title: "🌙 Deep-Sky Schedule & Dynamic Moon/Twilight Calculator v0.6.0",
             calc_status_loading: "⏳ Calculating…",
             calc_err_lib: "⚠️ The astronomy library could not be loaded (possibly a network problem); a backup source was tried. Check your connection and press “🔄 Recalculate”.",
             calc_err_input: "⚠️ Invalid input:",
@@ -1125,9 +1123,9 @@
             opt_tz_auto: "🌐 Auto (from coordinates)",
             opt_tz_device: "📱 Device time zone",
             tz_notice_auto: "Automatic time-zone selection is an approximate coordinate-based estimate, not a precise global time-zone boundary lookup. If the site is near a boundary or cannot be identified, select its IANA time zone manually.",
-            tz_notice_device: "Using the device time zone. This is appropriate only when the device and observatory use the same zone. Daylight-saving rules come from the device's time-zone data.",
+            tz_notice_device: "Using the device time zone. This is appropriate only when the device and observation site use the same zone. Daylight-saving rules come from the device's time-zone data.",
             tz_notice_manual: "Using the selected IANA time zone. Daylight-saving rules are calculated for the observing date using the browser's built-in time-zone data. Keep browser/OS time-zone data updated.",
-            tz_notice_fallback: "⚠️ The observatory time zone could not be estimated reliably from coordinates; the device time zone is being used temporarily. Select the observatory's IANA time zone manually.",
+            tz_notice_fallback: "⚠️ The observation-site time zone could not be estimated reliably from coordinates; the device time zone is being used temporarily. Select the site's IANA time zone manually.",
             tz_notice_invalid: "⚠️ This browser does not support the selected time zone; the device time zone is being used temporarily. Update the browser or choose another time zone.",
             tz_notice_dst: "⚠️ This local time may not exist because of a daylight-saving transition. Choose a valid time. When a local time repeats at the end of daylight saving, the earlier occurrence is used.",
             lbl_horiz_n: "North N (337.5°~22.5°)",
@@ -1156,14 +1154,14 @@
             seq_header_time: "Time Slot",
             seq_header_target: "Recommended Target",
             seq_no_data: "No eligible targets available during astronomical night for scheduling",
-            lbl_select_obs: "Select Observatory",
-            lbl_obs_name: "Observatory Name",
-            placeholder_obs_name: "Enter custom observatory name",
+            lbl_select_obs: "Select Observation Site",
+            lbl_obs_name: "Site Name",
+            placeholder_obs_name: "Enter custom site name",
             lbl_lat: "Latitude (-90° ~ +90°)",
             lbl_lon: "Longitude (-180° ~ +180°)",
             lbl_alt: "Elevation (-500 ~ 9000m)",
             lbl_threshold: "Full-Moon Interference Altitude Below Horizon (°)",
-            btn_save_loc: "💾 Save Observatory",
+            btn_save_loc: "💾 Save Observation Site",
                         btn_reset: "🔄 Reset (Restore Defaults)",
             msg_import_json_confirm: "⚠️ Warning: Importing a JSON file will overwrite your existing custom targets and locations! Do you want to proceed?",
             msg_import_csv_confirm: "⚠️ Warning: Importing a CSV file will overwrite your existing custom target list! Do you want to proceed?", 
@@ -1184,7 +1182,7 @@
             btn_import_csv: "📂 Import CSV Targets",
             lbl_obs_time: "Observation Date & Time (Local Time zone)",
             res_report_title: "📊 Assessment Report",
-            res_loc_label: "Observatory:",
+            res_loc_label: "Observation Site:",
             res_half1_title: "🌅 First Half: Sunset ~ Midnight (00:00)",
             res_half2_title: "🌙 Second Half: Midnight (00:00) ~ Sunrise",
             legend_safe: "Safe Window",
@@ -1236,8 +1234,8 @@
             lbl_horiz_south: "South (90°~180°) Min Alt",
             lbl_horiz_west: "West (180°~270°) Min Alt",
             lbl_horiz_north: "North (270°~360°) Min Alt",
-            btn_toggle_obs: "📂 Toggle Observatory & Horizon Settings",
-            div_obs_settings: "Observatory Location Settings (Max 10, Deletable)",
+            btn_toggle_obs: "📂 Toggle Observation Site & Horizon Settings",
+            div_obs_settings: "Observation Site Settings (Max 10, Deletable)",
             alert_max_loc: "⚠️ Maximum 10 locations reached. Please delete a saved location to add more.",
             new_moon: "New Moon", crescent: "Crescent", first_quarter: "First Quarter", waxing_gibbous: "Waxing Gibbous", full_moon: "Full Moon", waning_gibbous: "Waning Gibbous", third_quarter: "Third Quarter", waning_crescent: "Waning Crescent"
         }
@@ -1485,8 +1483,6 @@
         syncMoonThresholdUI();
     }
     function syncMoonThresholdUI() {
-        const valEl = document.getElementById('altThresholdVal');
-        if (valEl) valEl.innerText = `-${getMoonThresholdDeg()}°`;
         updateMoonEvalTitle();
     }
     function updateMoonEvalTitle() {
@@ -1513,7 +1509,7 @@
     }
     // ---------------------------------------------------------
 
-    const APP_VERSION = "0.5.21";
+    const APP_VERSION = "0.6.0";
 
     const DEFAULT_LOCATIONS = [
         { name: "香港大帽山 Tai Mo Shan, Hong Kong", utcOffsetMinutes: 480, lat: 22.4037, lon: 114.1287, alt: 900, altThreshold: 12.0, hN: 15, hNE: 15, hE: 15, hSE: 15, hS: 15, hSW: 15, hW: 15, hNW: 15 },
@@ -1982,7 +1978,7 @@
 
     // ===================== 固定 UTC offset 時間支援 =====================
     // 絕對時刻以 UTC Date 儲存；顯示和輸入依觀測地固定 offset 轉換，不讀取裝置時區。
-    // v0.5.22：固定 UTC offset。內部 Date 一律代表 UTC 絕對時刻；顯示/輸入再套用觀測地 offset。
+    // v0.6.0：固定 UTC offset。內部 Date 一律代表 UTC 絕對時刻；顯示/輸入再套用觀測地 offset。
     let SITE_OFFSET_MINUTES = 480;
     let TZ_STATUS = 'manual';
     const pad2 = (n) => String(n).padStart(2, '0');
@@ -2163,7 +2159,7 @@
     }
 
     function saveCurrentLocation() {
-        const name = document.getElementById('locName').value.trim() || "Observatory";
+        const name = document.getElementById('locName').value.trim() || "Observation Site";
         const lat = parseFloat(document.getElementById('lat').value);
         const lon = parseFloat(document.getElementById('lon').value);
         const alt = parseFloat(document.getElementById('alt').value);
@@ -2671,7 +2667,7 @@
         renderTargetList();
         renderLocationList();
         
-        // 有上次使用的參數就還原；否則載入第一個常用天文台地點
+        // 有上次使用的參數就還原；否則載入第一個常用觀察地點
         if (localStorage.getItem('last_lat') !== null) {
             const setVal = (id, key) => {
                 const v = localStorage.getItem(key);
@@ -2776,7 +2772,7 @@
     // 更新月光干擾評估標題（及 Timeline 標題）中的高度角數字
     syncMoonThresholdUI();
 
-            const locName = document.getElementById('locName').value.trim() || "Observatory";
+            const locName = document.getElementById('locName').value.trim() || "Observation Site";
             const lat = parseFloat(document.getElementById('lat').value);
             const lon = parseFloat(document.getElementById('lon').value);
             const elevation = parseFloat(document.getElementById('alt').value);
@@ -3439,7 +3435,6 @@
 
     
 
-
     function generateImagingSequence() {
         dbg('sequence.start', { obsTime: (document.getElementById('obsTime') || {}).value, utcOffsetMinutes: SITE_OFFSET_MINUTES });
         try {
@@ -3448,7 +3443,7 @@
             const elevation = parseFloat(document.getElementById('alt').value);
             const timeInputStr = document.getElementById('obsTime').value;
             if (!timeInputStr || isNaN(lat) || isNaN(lon) || isNaN(elevation)) {
-                alert("⚠️ 請先設定有效的天文台經緯度、海拔與查詢時間！");
+                alert("⚠️ 請先設定有效的觀察地點經緯度、海拔與查詢時間！");
                 return;
             }
 
@@ -3621,7 +3616,6 @@
             alert("⚠️ 生成排程錯誤：" + err.message);
         }
     }
-
 
 </script>
        
